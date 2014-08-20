@@ -1,0 +1,25 @@
+* {
+  display: block;
+}
+
+html {
+  width: 600px;
+  padding: 10px;
+  border-width: 1px;
+  margin: auto;
+  background: #0000cc;
+}
+
+head {
+  display: none;
+}
+
+.inner {
+  height: 100px;
+  margin-bottom: 20px;
+}
+
+span#name {
+  background: red;
+  color: white;
+}
