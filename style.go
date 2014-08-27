@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
 	"sort"
 	"strings"
 )
@@ -16,9 +17,13 @@ const (
 )
 
 type StyledNode struct {
-	node             Node
+	node             *Node
 	specified_values PropertyMap
 	children         []StyledNode
+}
+
+func (s StyledNode) String() string {
+	return fmt.Sprintf("StyledNode{node: %+v, specified_values: %+v, children: %+v}", *s.node, s.specified_values, s.children)
 }
 
 // not sure I need the bool here
@@ -53,7 +58,7 @@ func (s StyledNode) display() Display {
 	}
 }
 
-func style_tree(root Node, stylesheet Stylesheet) StyledNode {
+func style_tree(root *Node, stylesheet Stylesheet) StyledNode {
 	sn := StyledNode{node: root, children: make([]StyledNode, 0)}
 	var sv PropertyMap
 	// if node is an element, return the specified_values of that element's
@@ -68,7 +73,7 @@ func style_tree(root Node, stylesheet Stylesheet) StyledNode {
 	}
 	sn.specified_values = sv
 	for _, child := range root.children {
-		sn.children = append(sn.children, style_tree(child, stylesheet))
+		sn.children = append(sn.children, style_tree(&child, stylesheet))
 	}
 	return sn
 }
