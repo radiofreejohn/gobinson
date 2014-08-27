@@ -7,12 +7,16 @@ const (
 	Text
 )
 
-type Node struct {
-	node_type  int
-	depth      int
-	children   []Node
+type NodeData struct {
 	text       string
 	attributes AttrMap
+}
+
+type Node struct {
+	node_type int
+	depth     int
+	children  []Node
+	data      NodeData
 }
 
 /*
@@ -39,15 +43,15 @@ func (n Node) String() string {
 type AttrMap map[string]string
 
 func text(data string) Node {
-	return Node{node_type: Text, children: nil, text: data}
+	return Node{node_type: Text, children: nil, data: NodeData{text: data}}
 }
 
 func elem(name string, attrs AttrMap, children []Node) Node {
-	return Node{children: children, text: name, attributes: attrs}
+	return Node{children: children, data: NodeData{text: name, attributes: attrs}}
 }
 
 func (e Node) get_attribute(key string) string {
-	return e.attributes[key]
+	return e.data.attributes[key]
 }
 
 func (e Node) id() string {

@@ -27,6 +27,7 @@ type BySpecificity []Selector
 
 func (s BySpecificity) Len() int      { return len(s) }
 func (s BySpecificity) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
 // sort highest first
 func (s BySpecificity) Less(i, j int) bool {
 	return s[i].Specificity() > s[j].Specificity()
@@ -43,7 +44,7 @@ func (s Selector) Specificity() uint64 {
 func (p *CSSParser) parse_simple_selector() Selector {
 	result := Selector{class: make([]string, 0)}
 
-    LOOP:
+LOOP:
 	for !p.eof() {
 		//r := p.next_rune()
 		switch r := p.next_rune(); {
@@ -153,7 +154,7 @@ func (p *CSSParser) parse_hex_pair() uint8 {
 func (p *CSSParser) parse_selectors() []Selector {
 	selectors := make([]Selector, 0)
 
-    LOOP:
+LOOP:
 	for {
 		selectors = append(selectors, p.parse_simple_selector())
 		p.consume_whitespace()
