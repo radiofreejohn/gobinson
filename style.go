@@ -3,7 +3,6 @@ package main
 import (
     "fmt"
 	"sort"
-	"strings"
 )
 
 type PropertyMap map[string]Value
@@ -143,13 +142,12 @@ func matches_simple_selector(elem NodeData, selector Selector) bool {
 	if selector.tag_name != elem.text {
 		return false
 	}
-	// can't use Node methods  :(
-	if selector.id != elem.attributes["id"] {
+	if selector.id != elem.id() {
 		return false
 	}
 	// find more efficient way to do this
 	for _, selector_class := range selector.class {
-		for _, elem_class := range strings.Fields(elem.attributes["classes"]) {
+		for _, elem_class := range elem.classes() {
 			if selector_class != elem_class {
 				return false
 			}

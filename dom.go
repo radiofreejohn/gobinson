@@ -52,14 +52,14 @@ func elem(name string, attrs AttrMap, children []Node) Node {
 	return Node{children: children, data: NodeData{text: name, attributes: attrs}}
 }
 
-func (e Node) get_attribute(key string) string {
-	return e.data.attributes[key]
+func (n NodeData) get_attribute(key string) string {
+	return n.attributes[key]
 }
 
-func (e Node) id() string {
-	return e.get_attribute("id")
+func (n NodeData) id() string {
+	return n.get_attribute("id")
 }
 
-func (e Node) classes() []string {
-	return strings.Fields(e.get_attribute("class"))
+func (n NodeData) classes() []string {
+	return strings.Fields(n.get_attribute("class"))
 }
