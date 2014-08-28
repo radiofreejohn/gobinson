@@ -12,6 +12,12 @@ type Stylesheet struct {
 	rules []Rule
 }
 
+type Unit int
+
+const (
+	Px Unit = iota
+)
+
 type Rule struct {
 	selectors    []Selector
 	declarations []Declaration
@@ -41,7 +47,7 @@ func (s Selector) Specificity() uint64 {
 	return result
 }
 
-func (p *CSSParser) parse_simple_selector() Selector {
+func (p *Parser) parse_simple_selector() Selector {
 	result := Selector{class: make([]string, 0)}
 
 LOOP:
@@ -73,34 +79,37 @@ type Declaration struct {
 // Value types
 type Value interface{}
 type KeywordValue string
-type LengthValue float32
+type LengthValue struct {
+	length float32
+	unit   Unit
+}
 type ColorValue [4]uint8
 
-// Excluding Unit for now, I'd make it part of a LengthValue struct though
-
-type CSSParser struct {
-	pos   int
-	input []rune
+func (v LengthValue) to_px() float32 {
+	if v.unit == Px {
+		return v.length
+	} else {
+		return 0.0
+	}
 }
 
-func (p *CSSParser) parse_rule() Rule {
+func (p *Parser) parse_rule() Rule {
 	return Rule{selectors: p.parse_selectors(),
 		declarations: p.parse_declarations()}
 }
 
-func (p *CSSParser) parse_identifier() string {
+func (p *Parser) parse_identifier() string {
 	return string(p.consume_while(valid_identifier_rune))
 }
 
-func (p *CSSParser) parse_color() Value {
+func (p *Parser) parse_color() Value {
 	if p.consume_rune() != rune('#') {
 		panic("parse_color expected #, but got something else")
 	}
 	return Value(ColorValue{p.parse_hex_pair(), p.parse_hex_pair(), p.parse_hex_pair(), 255})
 }
 
-// placebo for now, I didn't make units a thing
-func (p *CSSParser) parse_unit() {
+func (p *Parser) parse_unit() {
 	s := strings.ToLower(p.parse_identifier())
 	switch s {
 	case "px":
@@ -110,7 +119,7 @@ func (p *CSSParser) parse_unit() {
 	}
 }
 
-func (p *CSSParser) parse_value() Value {
+func (p *Parser) parse_value() Value {
 	//r := p.next_rune()
 	var v Value
 	switch r := p.next_rune(); {
@@ -124,14 +133,13 @@ func (p *CSSParser) parse_value() Value {
 	return v
 }
 
-func (p *CSSParser) parse_length() Value {
+func (p *Parser) parse_length() Value {
 	l := p.parse_float()
-	// throwing this out
 	p.parse_unit()
 	return Value(l)
 }
 
-func (p *CSSParser) parse_float() float32 {
+func (p *Parser) parse_float() float32 {
 	s := string(p.consume_while(func(r rune) bool {
 		if unicode.IsNumber(r) || r == rune('.') {
 			return true
@@ -143,7 +151,7 @@ func (p *CSSParser) parse_float() float32 {
 	return float32(f)
 }
 
-func (p *CSSParser) parse_hex_pair() uint8 {
+func (p *Parser) parse_hex_pair() uint8 {
 	s := string(p.input[p.pos : p.pos+2])
 	p.pos = p.pos + 2
 	i, _ := strconv.ParseUint(s, 0x10, 8)
@@ -151,7 +159,7 @@ func (p *CSSParser) parse_hex_pair() uint8 {
 	return ui
 }
 
-func (p *CSSParser) parse_selectors() []Selector {
+func (p *Parser) parse_selectors() []Selector {
 	selectors := make([]Selector, 0)
 
 LOOP:
@@ -172,7 +180,7 @@ LOOP:
 	return selectors
 }
 
-func (p *CSSParser) parse_declarations() []Declaration {
+func (p *Parser) parse_declarations() []Declaration {
 	if p.consume_rune() != rune('{') {
 		panic("parse_declarations expected { but got something else")
 	}
@@ -188,7 +196,7 @@ func (p *CSSParser) parse_declarations() []Declaration {
 	return declarations
 }
 
-func (p *CSSParser) parse_declaration() Declaration {
+func (p *Parser) parse_declaration() Declaration {
 	property_name := p.parse_identifier()
 	p.consume_whitespace()
 	if p.consume_rune() != rune(':') {
@@ -203,40 +211,7 @@ func (p *CSSParser) parse_declaration() Declaration {
 	return Declaration{name: property_name, value: value}
 }
 
-// Read the next rune without consuming it.
-func (p CSSParser) next_rune() rune {
-	return p.input[p.pos]
-}
-
-// Do the next runes start with the given string?
-func (p CSSParser) starts_with(s string) bool {
-	return strings.HasPrefix(string(p.input[p.pos:]), s)
-}
-
-// Return true if all input is consumed.
-func (p CSSParser) eof() bool {
-	return p.pos >= len(p.input)
-}
-
-func (p *CSSParser) consume_rune() rune {
-	r := p.input[p.pos]
-	p.pos = p.pos + 1
-	return r
-}
-
-func (p *CSSParser) consume_while(test func(rune) bool) []rune {
-	result := make([]rune, 0)
-	for !p.eof() && test(p.next_rune()) {
-		result = append(result, p.consume_rune())
-	}
-	return result
-}
-
-func (p *CSSParser) consume_whitespace() {
-	p.consume_while(unicode.IsSpace)
-}
-
-func (p *CSSParser) parse_rules() []Rule {
+func (p *Parser) parse_rules() []Rule {
 	rules := make([]Rule, 0)
 	for {
 		p.consume_whitespace()
@@ -248,8 +223,8 @@ func (p *CSSParser) parse_rules() []Rule {
 	return rules
 }
 
-func parsecss(source string) Stylesheet {
-	np := CSSParser{pos: 0, input: []rune(source)}
+func parse_css(source string) Stylesheet {
+	np := Parser{pos: 0, input: []rune(source)}
 	return Stylesheet{rules: np.parse_rules()}
 }
 

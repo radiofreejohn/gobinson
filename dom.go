@@ -21,27 +21,6 @@ type Node struct {
 	data      NodeData
 }
 
-/*
-func (n Node) String() string {
-	types := []string{"Element", "Text"}
-	s := ""
-	children := ""
-	if len(n.children) > 0 {
-		children = "children: ["
-		result := ""
-		for _, c := range n.children {
-			result = result + fmt.Sprintf("%s ", c)
-		}
-		children = children + result + "]"
-	}
-
-	for k := range n.attributes {
-		s = s + fmt.Sprintf("%s=%s ", k, n.attributes[k])
-	}
-	return strings.TrimSpace(fmt.Sprintf("%s: %s %s%s", types[n.node_type], n.text, s, children))
-}
-*/
-
 type AttrMap map[string]string
 
 func text(data string) Node {

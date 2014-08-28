@@ -152,7 +152,7 @@ func (p *Parser) parse_nodes() []Node {
 	return nodes
 }
 
-func parse(source string) Node {
+func parse_html(source string) Node {
 	np := Parser{pos: 0, input: []rune(source)}
 	nodes := np.parse_nodes()
 	if len(nodes) == 1 {
