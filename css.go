@@ -93,6 +93,11 @@ func (v LengthValue) to_px() float32 {
 	}
 }
 
+// adding this since I can't make an interface method
+func (v KeywordValue) to_px() float32 {
+	return 0.0
+}
+
 func (p *Parser) parse_rule() Rule {
 	return Rule{selectors: p.parse_selectors(),
 		declarations: p.parse_declarations()}
