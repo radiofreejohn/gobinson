@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -16,7 +15,7 @@ const (
 )
 
 type StyledNode struct {
-	node             Node
+	node             *Node
 	specified_values PropertyMap
 	children         []StyledNode
 }
@@ -51,9 +50,10 @@ func (s StyledNode) display() Display {
 	default:
 		return Block
 	}
+	return Block
 }
 
-func style_tree(root Node, stylesheet Stylesheet) StyledNode {
+func style_tree(root *Node, stylesheet *Stylesheet) StyledNode {
 	sn := StyledNode{node: root, children: make([]StyledNode, 0)}
 	var sv PropertyMap
 	// if node is an element, return the specified_values of that element's
@@ -61,14 +61,14 @@ func style_tree(root Node, stylesheet Stylesheet) StyledNode {
 	// else make specified_values an empty PropertyMap
 	// does it need to be empty or can it be nil?
 	if root.node_type == Element {
-		sv = specified_values(root.data, stylesheet)
+		sv = specified_values(&root.data, stylesheet)
 		// something about Nodes
 	} else {
 		sv = make(PropertyMap)
 	}
 	sn.specified_values = sv
 	for _, child := range root.children {
-		sn.children = append(sn.children, style_tree(child, stylesheet))
+		sn.children = append(sn.children, style_tree(&child, stylesheet))
 	}
 	return sn
 }
@@ -83,7 +83,7 @@ func (s MRBySpecificity) Less(i, j int) bool {
 	return s[i].selector.Specificity() > s[j].selector.Specificity()
 }
 
-func specified_values(elem NodeData, stylesheet Stylesheet) PropertyMap {
+func specified_values(elem *NodeData, stylesheet *Stylesheet) PropertyMap {
 	// use of rules here is confusing since it's matchedrule which has
 	// selectors and rules within
 	values := make(PropertyMap)
@@ -102,13 +102,13 @@ type MatchedRule struct {
 	rule     Rule
 }
 
-func matching_rules(elem NodeData, stylesheet Stylesheet) []MatchedRule {
+func matching_rules(elem *NodeData, stylesheet *Stylesheet) []MatchedRule {
 	// todo
 	matchedrules := make([]MatchedRule, 0)
 	for _, rule := range stylesheet.rules {
 		for _, selector := range rule.selectors {
 			// rust uses .find – return first element satisfying
-			if matches(elem, selector) {
+			if matches(elem, &selector) {
 				matchedrules = append(matchedrules, MatchedRule{selector, rule})
 				// make sure this breaks out of the loop correctly
 				break
@@ -118,15 +118,14 @@ func matching_rules(elem NodeData, stylesheet Stylesheet) []MatchedRule {
 	return matchedrules
 }
 
-func matches(elem NodeData, selector Selector) bool {
-	// todo
-	// god this is convoluted
+func matches(elem *NodeData, selector *Selector) bool {
 	// i assume this exists to extend beyond SimpleSelector?
-	return matches_simple_selector(elem, selector)
+	value := matches_simple_selector(elem, selector)
+	return value
 }
 
 // I use Selector and not a sum type so just use Selector
-func matches_simple_selector(elem NodeData, selector Selector) bool {
+func matches_simple_selector(elem *NodeData, selector *Selector) bool {
 	// if selector.tag_name.iter().any(|name| elem.tag_name != *name) {
 	// return false }
 	// what does .any do in this context in rust?
@@ -135,14 +134,20 @@ func matches_simple_selector(elem NodeData, selector Selector) bool {
 	// i was confusing myself because I thought this meant .. nevermind
 	// selector isn't an array, does rust just use .iter() to get .any for free?
 
-	if selector.tag_name != elem.text {
+	// i think i screwed up mixing tag name and text :P
+	if selector.tag_name != "" && (selector.tag_name != elem.text) {
 		return false
 	}
-	if selector.id != elem.id() {
+	if selector.id != "" && (selector.id != elem.id()) {
 		return false
 	}
 	// find more efficient way to do this
 	for _, selector_class := range selector.class {
+		// this is where my code diverged from
+		// the rust one.
+		if len(elem.classes()) == 0 {
+			return false
+		}
 		for _, elem_class := range elem.classes() {
 			if selector_class != elem_class {
 				return false

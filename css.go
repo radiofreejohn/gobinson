@@ -85,6 +85,18 @@ type LengthValue struct {
 }
 type ColorValue [4]uint8
 
+// I think this indicates I'm using the interface{} type wrong
+func ValueToPx(v Value) float32 {
+	switch v.(type) {
+	case LengthValue:
+		return v.(LengthValue).to_px()
+	case KeywordValue:
+		return v.(KeywordValue).to_px()
+	default:
+		return 0.0
+	}
+}
+
 func (v LengthValue) to_px() float32 {
 	if v.unit == Px {
 		return v.length
@@ -114,11 +126,11 @@ func (p *Parser) parse_color() Value {
 	return Value(ColorValue{p.parse_hex_pair(), p.parse_hex_pair(), p.parse_hex_pair(), 255})
 }
 
-func (p *Parser) parse_unit() {
+func (p *Parser) parse_unit() Unit {
 	s := strings.ToLower(p.parse_identifier())
 	switch s {
 	case "px":
-		return
+		return Px
 	default:
 		panic(fmt.Sprintf("parse_unit expected 'px' but got %s", s))
 	}
@@ -133,15 +145,16 @@ func (p *Parser) parse_value() Value {
 	case r == rune('#'):
 		v = p.parse_color()
 	default:
-		v = p.parse_identifier()
+		// is this OK?
+		v = KeywordValue(p.parse_identifier())
 	}
 	return v
 }
 
 func (p *Parser) parse_length() Value {
 	l := p.parse_float()
-	p.parse_unit()
-	return Value(l)
+	u := p.parse_unit()
+	return LengthValue{length: l, unit: u}
 }
 
 func (p *Parser) parse_float() float32 {
@@ -208,6 +221,7 @@ func (p *Parser) parse_declaration() Declaration {
 		panic("parse_declaration expected : got something else")
 	}
 	p.consume_whitespace()
+	// I think I am doing something wrong here. re/ float32 interface issue with LengthValue
 	value := p.parse_value()
 	p.consume_whitespace()
 	if p.consume_rune() != rune(';') {
